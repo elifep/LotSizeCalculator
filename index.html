@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>LOT SIZING CALCULATOR FOR YATAS</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* Responsive table container */
+    #tableSection {
+      width: 100%;
+      overflow-x: auto;
+      margin: 20px auto;
+    }
+    .lot-table {
+      width: 100%;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    .lot-table th,
+    .lot-table td {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background-overlay"></div>
+  <div class="container">
+    <header>
+      <h2>LOT SIZING CALCULATOR FOR YATAS</h2>
+    </header>
+    <div class="form">
+      <div class="form-group">
+        <label>Demand:</label>
+        <input id="demandInput" type="text" value="335,200,140,440,300,200" />
+      </div>
+      <div class="form-group">
+        <label>Setup Cost:</label>
+        <input id="setupCost" type="number" value="200" />
+      </div>
+      <div class="form-group">
+        <label>Holding Cost:</label>
+        <input id="holdingCost" type="number" value="0.3" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>Initial Stock:</label>
+        <input id="initialStock" type="number" value="0" />
+      </div>
+      <div class="form-group">
+        <label>Select Method:</label>
+        <select id="methodSelect">
+          <option value="EOQ">EOQ</option>
+          <option value="SilverMeal">Silver-Meal</option>
+          <option value="LUC">Least Unit Cost</option>
+          <option value="PPB">Part Period Balancing</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <button onclick="calculate()" class="full-width-btn">Calculate</button>
+      </div>
+      <div class="form-group">
+        <button onclick="compareMethods()" class="full-width-btn">Compare Methods</button>
+      </div>
+    </div>
+
+    <div class="section" id="tableSection" style="display: none;">
+      <table class="lot-table">
+        <thead>
+          <tr id="weekRow"><th>Week</th></tr>
+        </thead>
+        <tbody>
+          <tr id="demandRow"><td>Demand</td></tr>
+          <tr id="productionRow"><td>Production</td></tr>
+          <tr id="inventoryRow"><td>Ending Inventory</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="action-buttons">
+      <button id="exportBtn" onclick="exportToExcel()" style="display: none;"><img src="excel-icon.svg" alt="Export to Excel" class="excel-icon-only" /></button>
+    </div>
+
+    <!-- eskiden bu iki satır doğrudan body içinde yer alıyordu -->
+<!-- değiştirildi: bunları .summary-container ile sardık -->
+<div class="summary-container">
+  <div id="costSummary" class="section"></div>
+  <div id="compareSummary" class="section"></div>
+</div>
+
+
+    <div id="costSummary" class="section"></div>
+    <div id="compareSummary" class="section"></div>
+    <canvas id="chart" width="800" height="300"></canvas>
+
+    <button id="toggleStepsBtn" class="toggle-btn" style="display: none;">Show Steps ▼</button>
+    <div class="section">
+      <div id="stepsContainer" style="display: none;">
+        <h3>Calculation Steps:</h3>
+        <div id="stepLog" class="steps"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    document.getElementById('toggleStepsBtn').addEventListener('click', () => {
+      const stepsContainer = document.getElementById('stepsContainer');
+      const btn = document.getElementById('toggleStepsBtn');
+      if (stepsContainer.style.display === 'none') {
+        stepsContainer.style.display = 'block';
+        btn.textContent = 'Hide Steps ▲';
+      } else {
+        stepsContainer.style.display = 'none';
+        btn.textContent = 'Show Steps ▼';
+      }
+    });
+
+    let latestData = {};
+
+    function calculate() {
+      const demands = document.getElementById('demandInput').value.split(',').map(x => parseInt(x.trim()));
+      const setupCost = parseFloat(document.getElementById('setupCost').value);
+      const holdingCost = parseFloat(document.getElementById('holdingCost').value);
+      let inventoryLevel = parseInt(document.getElementById('initialStock').value);
+      const method = document.getElementById('methodSelect').value;
+
+      const production = Array(demands.length).fill(0);
+      const inventory = Array(demands.length).fill(0);
+      const steps = [];
+
+      // Initial stock usage
+      let t = 0;
+      while (t < demands.length && inventoryLevel >= demands[t]) {
+        steps.push(`Week ${t+1}: Demand=${demands[t]}, use initial stock. Inv before=${inventoryLevel}`);
+        inventoryLevel -= demands[t];
+        inventory[t] = inventoryLevel;
+        steps.push(`  Ending Inv=${inventory[t]}`);
+        t++;
+      }
+
+      // Apply chosen method from week t
+      if (t < demands.length) {
+        // EOQ
+        if (method === 'EOQ') {
+          const avgD = demands.reduce((a,b)=>a+b)/demands.length;
+          const q = Math.round(Math.sqrt(2*setupCost*avgD/holdingCost));
+          steps.push(`EOQ Q = sqrt((2*${setupCost}*${avgD.toFixed(2)})/${holdingCost}) = ${q}`);
+          for (let i = t; i < demands.length; i++) {
+            steps.push(`Week ${i+1}: Demand=${demands[i]}, Inv=${inventoryLevel}`);
+            if (inventoryLevel < demands[i]) {
+              production[i] = q;
+              inventoryLevel += q;
+              steps.push(`  Produce ${q}`);
+            } else steps.push('  No production');
+            inventoryLevel -= demands[i];
+            inventory[i] = inventoryLevel;
+            steps.push(`  Ending Inv=${inventory[i]}`);
+          }
+        }
+        // Silver-Meal
+        else if (method === 'SilverMeal') {
+          let start = t;
+          while (start < demands.length) {
+            let bestK = 1, minAvg = Infinity;
+            steps.push(`► Start Silver-Meal at week ${start+1}`);
+            for (let k = 1; start + k <= demands.length; k++) {
+              let holdCost = 0;
+              for (let j = 1; j < k; j++) holdCost += demands[start+j]*j;
+              const avg = (setupCost + holdingCost*holdCost)/k;
+              steps.push(`  k=${k}: AvgCost=(${setupCost}+${holdingCost}*${holdCost})/${k}=${avg.toFixed(2)}`);
+              if (avg < minAvg) { minAvg = avg; bestK = k; } else break;
+            }
+            const qty = demands.slice(start, start+bestK).reduce((a,b)=>a+b,0);
+            production[start] = qty;
+            inventoryLevel += qty;
+            steps.push(`  ➤ Produce ${qty} (k=${bestK})`);
+            for (let i = start; i < start+bestK; i++) {
+              steps.push(`  Week ${i+1}: Inv before=${inventoryLevel}`);
+              inventoryLevel -= demands[i];
+              inventory[i] = inventoryLevel;
+              steps.push(`    End Inv=${inventory[i]}`);
+            }
+            start += bestK;
+          }
+        }
+        // Least Unit Cost
+        else if (method === 'LUC') {
+          let start = t;
+          while (start < demands.length) {
+            let bestK = 1, minUC = Infinity;
+            steps.push(`► Start LUC at week ${start+1}`);
+            for (let k = 1; start + k <= demands.length; k++) {
+              let total = 0, holdCost = 0;
+              for (let j = 0; j < k; j++) { total += demands[start+j]; holdCost += demands[start+j]*j; }
+              const uc = (setupCost + holdingCost*holdCost)/total;
+              steps.push(`  k=${k}: UC=(${setupCost}+${holdingCost}*${holdCost})/${total}=${uc.toFixed(2)}`);
+              if (uc < minUC) { minUC = uc; bestK = k; }
+            }
+            const qty = demands.slice(start, start+bestK).reduce((a,b)=>a+b,0);
+            production[start] = qty;
+            inventoryLevel += qty;
+            steps.push(`  ➤ Produce ${qty} (k=${bestK})`);
+            for (let i = start; i < start+bestK; i++) {
+              steps.push(`  Week ${i+1}: Inv before=${inventoryLevel}`);
+              inventoryLevel -= demands[i]; inventory[i] = inventoryLevel;
+              steps.push(`    End Inv=${inventory[i]}`);
+            }
+            start += bestK;
+          }
+        }
+        // Part Period Balancing
+        else if (method === 'PPB') {
+          let start = t;
+          while (start < demands.length) {
+            let bestK = 1;
+            steps.push(`► Start PPB at week ${start+1}`);
+            for (let k = 1; start + k <= demands.length; k++) {
+              let holdCost = 0;
+              for (let j = 1; j < k; j++) holdCost += demands[start+j]*j;
+              const cost = holdingCost*holdCost;
+              steps.push(`  k=${k}: HoldCost=${holdingCost}*${holdCost}=${cost.toFixed(2)}`);
+              if (cost <= setupCost) bestK = k; else break;
+            }
+            const qty = demands.slice(start, start+bestK).reduce((a,b)=>a+b,0);
+            production[start] = qty; inventoryLevel += qty;
+            steps.push(`  ➤ Produce ${qty} (k=${bestK})`);
+            for (let i = start; i < start+bestK; i++) {
+              steps.push(`  Week ${i+1}: Inv before=${inventoryLevel}`);
+              inventoryLevel -= demands[i]; inventory[i] = inventoryLevel;
+              steps.push(`    End Inv=${inventory[i]}`);
+            }
+            start += bestK;
+          }
+        }
+      }
+
+      // Cost calculations
+      const setupCount = production.filter(q => q > 0).length;
+      const totalSetupCost = setupCount * setupCost;
+      const totalHoldingCost = inventory.reduce((sum, inv) => sum + inv * holdingCost, 0);
+      const totalCost = totalSetupCost + totalHoldingCost;
+
+      // Update summary
+     // JavaScript: innerHTML’i tabloya çeviriyor
+const setup = totalSetupCost.toFixed(2);
+const holding = totalHoldingCost.toFixed(2);
+const total = totalCost.toFixed(2);
+
+document.getElementById('costSummary').innerHTML = `
+<h4>Cost Summary Table</h4>  
+<table class="cost-table">
+    <tr>
+      <th>Setup Cost</th>
+      <td>${setup} ₺</td>
+    </tr>
+    <tr>
+      <th>Holding Cost</th>
+      <td>${holding} ₺</td>
+    </tr>
+    <tr>
+      <th>Total Cost</th>
+      <td class="total-cost">${total} ₺</td>
+    </tr>
+  </table>
+`;
+
+      latestData = { demands, production, inventory };
+
+      // Render table
+      ['weekRow','demandRow','productionRow','inventoryRow'].forEach(id => document.getElementById(id).innerHTML = '');
+      document.getElementById('weekRow').innerHTML = '<th>Week</th>';
+      document.getElementById('demandRow').innerHTML = '<td>Demand</td>';
+      document.getElementById('productionRow').innerHTML = '<td>Production</td>';
+      document.getElementById('inventoryRow').innerHTML = '<td>Ending Inventory</td>';
+      demands.forEach((d,i) => {
+        document.getElementById('weekRow').innerHTML += `<th>${i+1}</th>`;
+        document.getElementById('demandRow').innerHTML += `<td>${d}</td>`;
+        document.getElementById('productionRow').innerHTML += `<td>${production[i]}</td>`;
+        document.getElementById('inventoryRow').innerHTML += `<td>${inventory[i]}</td>`;
+      });
+      document.getElementById('tableSection').style.display = 'block';
+      document.getElementById('stepLog').textContent = steps.join('\n');
+      document.getElementById('toggleStepsBtn').style.display = 'inline-block';
+      document.getElementById('exportBtn').style.display = 'inline-block';
+
+      // Chart
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (window.myChart) window.myChart.destroy();
+      window.myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: demands.map((_,i)=>`W${i+1}`),
+          datasets: [
+            { label:'Production', data:production, tension:0.3, borderColor: '#ff1493', backgroundColor: '#e75480'},
+            { label:'Inventory', data:inventory, tension:0.3, borderColor: '#A020F0', backgroundColor: '#871F78'  }
+          ]
+        }
+      });
+    }
+
+   function exportToExcel() {
+  if (!latestData.demands) return alert('Calculate first');
+
+  // 1) Lot Sizing verisi
+  const lotData = [
+    ['Week', ...latestData.demands.map((_, i) => i + 1)],
+    ['Demand', ...latestData.demands],
+    ['Production', ...latestData.production],
+    ['Ending Inventory', ...latestData.inventory],
+    [], // boş satır ayırmak için
+    ['Comparison'], // Comparison başlığı
+  ];
+
+  // 2) Comparison tablosunu DOM’dan al
+  const table = document.querySelector('#compareSummary .compare-table');
+  if (table) {
+    const compRows = [];
+    table.querySelectorAll('tr').forEach(tr => {
+      const row = [];
+      tr.querySelectorAll('th, td').forEach(cell => {
+        row.push(cell.textContent);
+      });
+      compRows.push(row);
+    });
+    lotData.push(...compRows);
+  }
+
+  // 3) Sheet oluştur ve indir
+  const ws = XLSX.utils.aoa_to_sheet(lotData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Lot Sizing & Comparison');
+  XLSX.writeFile(wb, 'lot_sizing_output.xlsx');
+}
+
+
+    function compareMethods() {
+  const methods = ['EOQ','SilverMeal','LUC','PPB'];
+  const results = {};
+  const original = document.getElementById('methodSelect').value;
+
+  methods.forEach(m => {
+    document.getElementById('methodSelect').value = m;
+    calculate();
+    const cell = document.querySelector('#costSummary .total-cost');
+    const num  = cell
+      ? parseFloat(cell.textContent.replace(/[^0-9.]/g, ''))
+      : Infinity;
+    results[m] = isNaN(num) ? Infinity : num;
+  });
+
+  // Orijinal metoda dön ve son hesaplama
+  document.getElementById('methodSelect').value = original;
+  calculate();
+
+  // En düşük maliyetli metodu bul
+  let best = methods[0];
+  methods.forEach(m => {
+    if (results[m] < results[best]) best = m;
+  });
+
+  // Tablo satırlarını hazırla
+  const rows = methods.map(m => {
+    const cost = results[m] === Infinity ? '—' : results[m].toFixed(2);
+    const cls = m === best ? ' class="best-method"' : '';
+    return `<tr${cls}>
+      <td>${m}</td>
+      <td>${cost} ₺</td>
+    </tr>`;
+  }).join('');
+
+  // Table render
+  document.getElementById('compareSummary').innerHTML = `
+    <h4>Comparison Table</h4>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Method</th><th>Total Cost</th></tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,404 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f8fa;
+    color: #333;
+    padding: 20px;
+    margin: 0;
+}
+
+/* === Background with blur === */
+.background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('yatas-background.jpg');
+    /* veya senin yüklediğin .png dosyası */
+    background-size: cover;
+    background-position: center;
+    filter: blur(2px);
+    z-index: -1;
+}
+
+/* === Main Container === */
+.container {
+    max-width: 960px;
+    margin: 40px auto;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* === Başlık kısmı geliştirme === */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+header img {
+    height: 60px;
+}
+
+h2 {
+    color: #002b5c;
+    font-weight: 700;
+    font-size: 24px;
+    flex: 1;
+    text-align: center;
+    margin: 0;
+}
+
+label {
+    display: block;
+    margin: 12px 0 6px;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    min-width: 280px;
+}
+
+button {
+    padding: 10px 18px;
+    background-color: #104888;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-right: 10px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+button:hover {
+    background-color: #052c5a;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+table th,
+table td {
+    padding: 12px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+}
+
+th {
+    background-color: #104888;
+    font-weight: 600;
+}
+
+.section {
+    margin-top: 40px;
+}
+
+#costSummary {
+    margin-top: 20px;
+    font-size: 16px;
+}
+
+#costSummary strong {
+    display: inline-block;
+    margin-top: 4px;
+}
+
+#costSummary strong[style*="color:green"] {
+    color: #008000;
+}
+
+.steps {
+    background-color: #f0f0f5;
+    padding: 15px;
+    border-left: 4px solid #999;
+    border-radius: 5px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+
+    input[type="text"],
+    input[type="number"],
+    select {
+        width: 100%;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    header img {
+        margin-bottom: 10px;
+    }
+
+    button {
+        width: 100%;
+        margin-top: 10px;
+    }
+}
+
+/* === Lot Sizing Table === */
+.lot-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background-color: #ffffff;
+    font-size: 15px;
+    color: #333;
+}
+
+.lot-table thead {
+    background-color: #dbeaf6;
+}
+
+.lot-table th {
+    padding: 14px 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    color: #fff;
+    border-bottom: 2px solid #cbdce6;
+}
+
+.lot-table td {
+    padding: 12px 10px;
+    border: 1px solid #e0e0e0;
+    text-align: center;
+    background-color: #fefefe;
+}
+
+.lot-table tbody tr:nth-child(even) td {
+    background-color: #f7fbfd;
+}
+
+.lot-table tbody tr:hover td {
+    background-color: #eef6fb;
+}
+
+/* === Responsive Table Ayarları === */
+#tableSection {
+  width: 100%;
+  overflow-x: auto;
+  margin: 20px auto;       /* Üst-alt boşluk, otomatik yatay merkezleme */
+}
+
+.lot-table {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;          /* Tabloyu konteyner içinde ortalar */
+  table-layout: auto;      /* Hücreleri eşit oranda daraltır */
+}
+
+.lot-table th,
+.lot-table td {
+  white-space: nowrap;      /* İçerik taşarsa sar */
+}
+
+/* Dar ekranlar için hücre doldurmalarını küçült */
+@media (max-width: 768px) {
+  .lot-table th,
+  .lot-table td {
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+}
+
+.toggle-btn {
+    background-color: transparent;
+    border: none;
+    color: #104888;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background-color: rgba(16, 72, 136, 0.1);
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+#exportBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+#exportBtn:hover {
+    transform: scale(1.1);
+}
+
+.excel-icon-only {
+    width: 48px;
+    height: 48px;
+}
+
+#exportBtn,
+#toggleStepsBtn {
+    margin-top: 20px;
+    margin-right: 10px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.form-group label {
+    flex: 0 0 150px;
+    /* sabit genişlik */
+    margin-right: 12px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.form-group input,
+.form-group select {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.calculate-button {
+    background-color: #104888;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.full-width-btn {
+    width: 100%;
+    padding: 10px 12px;
+    background-color: #104888;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.full-width-btn:hover {
+    background-color: #052c5a;
+}
+/* CSS */
+#costSummary .cost-table {
+  width: 100%;
+  max-width: 400px;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-family: Arial, sans-serif;
+}
+
+#costSummary .cost-table th,
+#costSummary .cost-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+#costSummary .cost-table th {
+  background-color: #f4f4f4;
+  font-weight: normal;
+  color: #333;
+}
+
+#costSummary .cost-table tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+#costSummary .cost-table .total-cost {
+  font-weight: bold;
+  color: green;
+} /* Compare Summary Table */
+    #compareSummary .compare-table {
+      width: 100%;
+      max-width: 400px;
+      border-collapse: collapse;
+      margin: 1em 0;
+      font-family: Arial, sans-serif;
+    }
+    #compareSummary .compare-table th,
+    #compareSummary .compare-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    #compareSummary .compare-table th {
+      background-color: #f4f4f4;
+      font-weight: normal;
+      color: #333;
+    }
+    /* Best satırı vurgula */
+    #compareSummary .compare-table tr.best-method {
+      background-color: #d4edda !important;
+    }
+    #compareSummary .compare-table tr.best-method td {
+      color: #155724 !important;
+      font-weight: bold !important;
+    }
+    /* — Yeni: yan yana container */
+.summary-container {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.summary-container .section {
+  flex: 1 1 45%;
+}
